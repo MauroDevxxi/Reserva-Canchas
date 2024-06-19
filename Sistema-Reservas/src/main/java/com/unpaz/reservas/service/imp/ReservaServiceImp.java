@@ -1,6 +1,7 @@
 package com.unpaz.reservas.service.imp;
 
 import com.unpaz.reservas.dtos.request.ReservaDto;
+import com.unpaz.reservas.dtos.response.ReservaDtoResponse;
 import com.unpaz.reservas.exeptions.NotFoundException;
 import com.unpaz.reservas.model.Hora;
 import com.unpaz.reservas.model.Reserva;
@@ -9,15 +10,16 @@ import com.unpaz.reservas.service.ReservaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 @Service
 public class ReservaServiceImp implements ReservaService {
-    @Override
+    /*@Override
     public Reserva save(Reserva obj) {
         return null;
-    }
+    }*/
 
     @Autowired
     private ReservaRepository reservaRepository;
@@ -30,7 +32,24 @@ public class ReservaServiceImp implements ReservaService {
 //validar si no esta ocupada la hora y dia
 
     @Override
-    public ReservaDto save(Reserva obj) {
+    public ReservaDtoResponse guardar(ReservaDto obj) {
+        Reserva reservaNueva = new Reserva();
+        reservaNueva = reservaRepository.findById(obj.getIdReserva()).orElseThrow(() ->
+                new NotFoundException("No se encontro razon social con el id: " + obj.getIdReserva() ));
+        reservaNueva.setHora(horaRepository.findById(obj.getIdHora()).orElseThrow(() ->
+                new NotFoundException("No se encontro razon social con el id: " + obj.getIdHora() )));
+        reservaNueva.setCanchaPrecio(canchaPrecioRepository.findById(obj.getIdCanchaPrecio()).orElseThrow(() ->
+                new NotFoundException("No se Id CAnchaPrecio con el id: " + obj.getIdCanchaPrecio() )));
+        reservaNueva.setUsu(usuarioRepository.findById(obj.getIdUsuario()).orElseThrow(() ->
+                new NotFoundException("No se encontro Usuario con el id: " + obj.getIdUsuario() )));
+        ReservaDtoResponse reser = new ReservaDtoResponse(reservaNueva);
+        reservaRepository.save(reservaNueva);
+        return reser;
+    }
+
+/*
+    @Override
+    public Reserva save(Reserva obj) {
         Reserva reservaNueva = new Reserva();
         reservaNueva.setFecha(obj.getFecha());
         reservaNueva.setHora(horaRepository.findById(obj.getIdHora()).orElseThrow(() ->
@@ -41,7 +60,7 @@ public class ReservaServiceImp implements ReservaService {
                 new NotFoundException("No se encontro Usuario con el id: " + obj.getIdUsuario() )));
         //ReservaDtoResponse reser = new ReservaDtoResponse(reservaNueva);
         return reservaRepository.save(reservaNueva);
-    }
+    }*/
 
     @Override
     public List<Hora> listarHorasLibres(Date fecha) {
@@ -49,11 +68,60 @@ public class ReservaServiceImp implements ReservaService {
     }
 
     @Override
-    public ReservaDto update(Reserva obj) {
-        Reserva oldReserva = reservaRepository.findById(obj.getIdReserva()).orElseThrow(() ->
-                new NotFoundException("No se encontro Reserva con el id: " + obj.getIdReserva() ));;
-        Reserva reservaNueva = new Reserva();
-        reservaNueva.setIdReserva(oldReserva.getIdReserva());
+    public ReservaDtoResponse actualizar(ReservaDto obj) {
+
+        Reserva reservaModificada = reservaRepository.findById(obj.getIdReserva()).orElseThrow(() ->
+                new NotFoundException("No se encontro Reserva con el id: " + obj.getIdReserva() ));
+        reservaModificada.setIdReserva(obj.getIdReserva());
+        reservaModificada.setUsu(usuarioRepository.findById(obj.getIdUsuario()).orElseThrow(() ->
+                new NotFoundException("No se encontro Reserva con el id usuario: " + obj.getIdUsuario())));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+        String formatoFechaObj = sdf.format(obj.getFecha());
+        String formatoFechaReserva = sdf.format(reservaModificada.getFecha());
+
+        if (!formatoFechaObj.equals(formatoFechaReserva)) {
+            reservaModificada.setFecha(obj.getFecha());
+        }
+        reservaModificada.setFecha(obj.getFecha());
+        reservaModificada.setHora(horaRepository.findById(obj.getIdHora()).orElseThrow(() ->
+                new NotFoundException("No se encontro Reserva con el idHora " + obj.getIdHora())));
+        reservaModificada.setCanchaPrecio(canchaPrecioRepository.findById(obj.getIdCanchaPrecio()).orElseThrow(() ->
+                new NotFoundException("No se encontro Reserva con el id CanchaPrecio " + obj.getIdCanchaPrecio())));
+
+        reservaRepository.save(reservaModificada);
+        ReservaDtoResponse reser = new ReservaDtoResponse(reservaModificada);
+        return reser;
+    }
+
+    @Override
+    public Reserva save(Reserva obj) {
+        return null;
+    }
+
+    @Override
+    public Reserva update(Reserva obj) {
+        return null;
+    }
+
+    @Override
+    public Reserva getbyId(Long id) {
+        return reservaRepository.findById(id).orElseThrow(() ->
+                new NotFoundException("No se encontro razon social con el id: " + "variable"));
+    }
+
+    @Override
+    public List<Reserva> getAll() {
+        return (List<Reserva>) reservaRepository.findAll();
+    }
+
+    @Override
+    public void delete(Reserva obj) {
+       //reservaRepository. aca voy a barrer el campo boolean del horario
+    }
+}
+
+
+/*reservaNueva.setIdReserva(oldReserva.getIdReserva());
         // Comparar año, mes y día para cambiar o no la fecha de reserva
         if (oldReserva.getFecha().getYear() != obj.getFecha().getYear() ||
                 oldReserva.getFecha().getMonth() != obj.getFecha().getMonth() ||
@@ -75,23 +143,4 @@ public class ReservaServiceImp implements ReservaService {
             reservaNueva.setCanchaPrecio(oldReserva.getCanchaPrecio());
         }
         //El usuario va a ser el mismo xq es el que esta modificando la reserva
-        reservaNueva.setUsu(obj.getUsu());
-        return new  ReservaDto(reservaRepository.save(reservaNueva));
-    }
-
-    @Override
-    public Reserva getbyId(Long id) {
-        return reservaRepository.findById(id).orElseThrow(() ->
-                new NotFoundException("No se encontro razon social con el id: " + "variable"));
-    }
-
-    @Override
-    public List<Reserva> getAll() {
-        return (List<Reserva>) reservaRepository.findAll();
-    }
-
-    @Override
-    public void delete(Reserva obj) {
-       //reservaRepository. aca voy a barrer el campo boolean del horario
-    }
-}
+        reservaNueva.setUsu(obj.getUsu());*/
